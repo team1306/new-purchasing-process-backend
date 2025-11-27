@@ -61,10 +61,10 @@ export default async function handler(req, res) {
     const data = await slackRes.json();
 
     if (!data.ok) {
-      console.error("Slack API error:", data);
+      console.error("Slack API error: (Posting)", data);
       return res.status(500).json({ 
         ok: false, 
-        error: "Slack API error",
+        error: "Slack API error - Posting",
         details: data.error 
       });
     }
