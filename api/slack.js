@@ -8,9 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = req.method === "POST"
-      ? JSON.parse(req.body || "{}")
-      : {};
+    const body = req.body || {};
 
     const slackRes = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
