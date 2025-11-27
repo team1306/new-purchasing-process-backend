@@ -60,8 +60,6 @@ export default async function handler(req, res) {
 
     const data = await slackRes.json();
 
-    console.log(data)
-
     if (!data.ok) {
       console.error("Slack API error: (Posting)", data);
       return res.status(500).json({ 
