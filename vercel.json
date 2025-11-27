@@ -1,3 +1,26 @@
 {
-  "version": 2
+  "version": 2,
+  "headers": [
+    {
+      "source": "/vercel-config-cors",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "http://localhost:5173"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://team1306.github.io/New-Purchasing-Process"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
 }
