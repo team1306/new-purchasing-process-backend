@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     const slackRes = await fetch(
       `https://slack.com/api/conversations.replies?channel=${encodeURIComponent(
         channel
-      )}&ts=${encodeURIComponent(ts)}`,
+      )}&thread_ts=${encodeURIComponent(ts)}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
