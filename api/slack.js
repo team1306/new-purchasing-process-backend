@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       channel: body.channel,
       text: body.text || 'Purchase Request Update',
       blocks: body.blocks || undefined,
-      ts: body.thread_ts || undefined,
+      thread_ts: body.thread_ts || undefined,
     };
 
     // Send to Slack
