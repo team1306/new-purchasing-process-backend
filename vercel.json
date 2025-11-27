@@ -6,12 +6,6 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
-  ],
   "env": {
     "SLACK_BOT_TOKEN": "@slack-bot-token",
     "ALLOWED_ORIGINS": "@allowed-origins"
