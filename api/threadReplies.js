@@ -40,21 +40,17 @@ export default async function handler(req, res) {
     });
   }
 
-  const payload = {
-      channel: channel,
-      ts: ts,
-    };
-
   try {
     // Call Slack API to get conversation replies
     const slackRes = await fetch(
-      `https://slack.com/api/conversations.replies`,
+      `https://slack.com/api/conversations.replies?channel=${encodeURIComponent(
+        channel
+      )}&ts=${encodeURIComponent(ts)}`,
       {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
         },
-        body: JSON.stringify(payload)
       }
     );
 
