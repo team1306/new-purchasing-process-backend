@@ -1,11 +1,23 @@
+// api/slack.js - Vercel serverless function
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  // Get allowed origins from environment or use defaults
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'http://localhost:3000'];
+  
+  const origin = req.headers.origin;
+  
+  // Set CORS headers
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
+  // Handle preflight
   if (req.method === 'OPTIONS') {
-    return res.status(200).end(); // handle preflight
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
@@ -13,20 +25,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Ensure body is parsed
+    // Parse body if needed
     let body = req.body;
     if (typeof body === 'string') {
       body = JSON.parse(body);
     }
 
-    // Build Slack payload only with existing fields
+    // Validate required fields
+    if (!body.channel) {
+      return res.status(400).json({ ok: false, error: 'Missing channel parameter' });
+    }
+
+    // Build Slack payload
     const payload = {
       channel: body.channel,
-      text: body.text,
+      text: body.text || 'Purchase Request Update',
     };
-    if (body.thread_ts) payload.thread_ts = body.thread_ts;
-    if (body.blocks) payload.blocks = body.blocks;
+    
+    if (body.thread_ts) {
+      payload.thread_ts = body.thread_ts;
+    }
+    
+    if (body.blocks) {
+      payload.blocks = body.blocks;
+    }
 
+    // Call Slack API
     const slackRes = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: {
@@ -40,12 +64,20 @@ export default async function handler(req, res) {
 
     if (!data.ok) {
       console.error('Slack API error:', data);
-      return res.status(500).json({ ok: false, error: 'Slack API error', details: data });
+      return res.status(500).json({ 
+        ok: false, 
+        error: 'Slack API error', 
+        details: data.error 
+      });
     }
 
-    res.status(200).json(data);
+    return res.status(200).json(data);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ ok: false, error: 'backend_error', details: err.message });
+    console.error('Backend error:', err);
+    return res.status(500).json({ 
+      ok: false, 
+      error: 'backend_error', 
+      details: err.message 
+    });
   }
 }
