@@ -1,77 +1,115 @@
 // api/threadReplies.js - Vercel serverless function
 export default async function handler(req, res) {
-  // Allowed origins (from env or defaults)
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
+  // Get allowed origins from environment or use defaults
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(',')
     : ['http://localhost:5173', 'http://localhost:3000'];
+  
+  const origin = req.headers.origin;
+  
+  // Set CORS headers
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
-  // Vercel strips origin header sometimes (esp. during OPTIONS)
-  const origin = req.headers.origin || "*";
-
-  // Always set CORS headers
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400", // cache preflight 24h
-  };
-
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
-
-  // ---- PRE-FLIGHT ----
-  if (req.method === "OPTIONS") {
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // ---- ACCEPT ONLY GET ----
-  if (req.method !== "GET") {
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
   const { channel, ts } = req.query;
 
-  // Validate required params
+  // Validate parameters
   if (!channel || !ts) {
-    return res.status(400).json({
-      ok: false,
-      error: "Missing channel or ts parameter",
+    return res.status(400).json({ 
+      ok: false, 
+      error: 'Missing channel or ts parameter' 
     });
   }
 
   try {
-    // Call Slack API to get conversation replies
-    const slackRes = await fetch(
-      `https://slack.com/api/conversations.replies?channel=${encodeURIComponent(
-        channel
-      )}&ts=${encodeURIComponent(ts)}`,
+    // First get the conversation replies
+    const repliesRes = await fetch(
+      `https://slack.com/api/conversations.replies?channel=${encodeURIComponent(channel)}&ts=${encodeURIComponent(ts)}`,
       {
-        method: 'GET',
         headers: {
           Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
         },
       }
     );
 
-    const data = await slackRes.json();
+    const repliesData = await repliesRes.json();
 
-    if (!data.ok) {
-      console.error("Slack API error: (Replies)", data);
-      return res.status(500).json({
-        ok: false,
-        error: "Slack API error - Replies",
-        details: data.error,
+    if (!repliesData.ok) {
+      console.error('Slack API error:', repliesData);
+      return res.status(500).json({ 
+        ok: false, 
+        error: 'Slack API error', 
+        details: repliesData.error 
       });
     }
 
-    return res.status(200).json(data);
+    // Get all unique user IDs from messages
+    const userIds = [...new Set(
+      repliesData.messages
+        .filter(msg => msg.user)
+        .map(msg => msg.user)
+    )];
+
+    // Fetch user info for all users in the thread
+    const userInfoPromises = userIds.map(async (userId) => {
+      try {
+        const userRes = await fetch(
+          `https://slack.com/api/users.info?user=${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+            },
+          }
+        );
+        const userData = await userRes.json();
+        return userData.ok ? { id: userId, profile: userData.user.profile, name: userData.user.name } : null;
+      } catch (error) {
+        console.error(`Error fetching user ${userId}:`, error);
+        return null;
+      }
+    });
+
+    const usersInfo = await Promise.all(userInfoPromises);
+    const userMap = {};
+    usersInfo.forEach(user => {
+      if (user) {
+        userMap[user.id] = {
+          display_name: user.profile.display_name || user.profile.real_name || user.name,
+          real_name: user.profile.real_name,
+          image: user.profile.image_48
+        };
+      }
+    });
+
+    // Add user profile info to each message
+    const messagesWithProfiles = repliesData.messages.map(msg => ({
+      ...msg,
+      user_profile: msg.user ? userMap[msg.user] : null
+    }));
+
+    return res.status(200).json({
+      ok: true,
+      messages: messagesWithProfiles
+    });
   } catch (err) {
-    console.error("Backend error:", err);
-    return res.status(500).json({
-      ok: false,
-      error: "backend_error",
-      details: err.message,
+    console.error('Backend error:', err);
+    return res.status(500).json({ 
+      ok: false, 
+      error: 'backend_error', 
+      details: err.message 
     });
   }
 }
