@@ -75,8 +75,11 @@ export default async function handler(req, res) {
           }
         );
         const userData = await userRes.json();
-        if(userData.is_bot) return null;
-
+        if(userData.is_bot){ 
+          console.log("this is a fake user")
+          return null;
+        }
+        console.log(userData.profile.display_name);
         return userData.ok ? { id: userId, profile: userData.user.profile, name: userData.user.name } : null;
       } catch (error) {
         console.error(`Error fetching user ${userId}:`, error);
