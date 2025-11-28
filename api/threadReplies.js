@@ -75,6 +75,8 @@ export default async function handler(req, res) {
           }
         );
         const userData = await userRes.json();
+        if(userData.is_bot) return null;
+
         return userData.ok ? { id: userId, profile: userData.user.profile, name: userData.user.name } : null;
       } catch (error) {
         console.error(`Error fetching user ${userId}:`, error);
@@ -84,7 +86,7 @@ export default async function handler(req, res) {
 
     const usersInfo = await Promise.all(userInfoPromises);
     const userMap = {};
-    usersInfo.forEach(user => {
+    usersInfo.filter(user => user != null).forEach(user => {
       if (user) {
         userMap[user.id] = {
           display_name: user.profile.display_name || user.profile.real_name || user.name,
