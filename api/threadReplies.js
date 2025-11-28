@@ -75,10 +75,7 @@ export default async function handler(req, res) {
           }
         );
         const userData = await userRes.json();
-        if(userData.user.is_bot){ 
-          return null;
-        }
-        return userData.ok ? { id: userId, profile: userData.user.profile, name: userData.user.name } : null;
+        return userData.ok ? { id: userId, profile: userData.user.profile, name: userData.user.name, is_bot: userData.user.is_bot } : null;
       } catch (error) {
         console.error(`Error fetching user ${userId}:`, error);
         return null;
@@ -92,7 +89,8 @@ export default async function handler(req, res) {
         userMap[user.id] = {
           display_name: user.profile.display_name || user.profile.real_name || user.name,
           real_name: user.profile.real_name,
-          image: user.profile.image_48
+          image: user.profile.image_48,
+          is_bot: user.is_bot
         };
       }
     });
