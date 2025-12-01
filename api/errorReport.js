@@ -1,4 +1,3 @@
-// api/errorReport.js - Log frontend errors
 export default async function handler(req, res) {
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
