@@ -2,7 +2,7 @@
 export default async function handler(req, res) {
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    : ['http://localhost:5173', 'http://localhost:3000', 'https://team1306.github.io/'];
 
   const origin = req.headers.origin || "*";
 
